@@ -60,5 +60,5 @@ with open('config.yml', 'r') as yml:
     config = yaml.load(yml, Loader=yaml.SafeLoader)
 
 today = datetime.date.today() # 今日の日付
-# openGoogleForm(config)
+openGoogleForm(config)
 readFromSpread(config)
