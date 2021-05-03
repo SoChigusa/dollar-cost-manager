@@ -3,7 +3,7 @@
 import yaml
 import numpy as np
 import datetime
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 def openGoogleForm(cf):
     from selenium import webdriver
@@ -45,12 +45,21 @@ def readFromSpread(cf):
     worksheet = gc.open_by_key(SPREADSHEET_KEY).sheet1
 
     #セルの値を受け取る
+    c1 = worksheet.col_values(1)
     c2 = worksheet.col_values(2)
     c3 = worksheet.col_values(3)
+    c4 = worksheet.col_values(4)
+
+    # 購入日付の計算
+    # td : 月当たりのコストを用いてリスケールした基準買い付け日幅
+    # td2 : 実際の買い付け日と基準日とのずれを補正する因子
+    td = np.floor(30 * float(c3[-1]) / float(c2[-1]))
+    expect = datetime.strptime(c4[-2], '%Y/%m/%d')
+    current = datetime.strptime(c1[-1], '%Y/%m/%d %H:%M:%S')
+    td2 = (expect - current).days
 
     # 次の購入日付を4列目セルに書き込み
-    td = np.floor(30 * float(c3[-1]) / float(c2[-1]))
-    next = today + timedelta(days=td)
+    next = current + timedelta(days=td+td2)
     strnext = next.strftime('%Y/%m/%d')
     worksheet.update_cell(len(c2), 4, strnext)
     print('next purchase date is set to be '+strnext+'!!')
@@ -59,6 +68,5 @@ def readFromSpread(cf):
 with open('config.yml', 'r') as yml:
     config = yaml.load(yml, Loader=yaml.SafeLoader)
 
-today = datetime.date.today() # 今日の日付
-openGoogleForm(config)
+# openGoogleForm(config)
 readFromSpread(config)
