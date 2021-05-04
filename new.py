@@ -54,7 +54,7 @@ def readFromSpread(cf):
     # td : 月当たりのコストを用いてリスケールした基準買い付け日幅
     # td2 : 実際の買い付け日と基準日とのずれを補正する因子
     td = np.floor(30 * float(c3[-1]) / float(c2[-1]))
-    expect = datetime.strptime(c4[-2], '%Y/%m/%d')
+    expect = datetime.strptime(c4[-1], '%Y/%m/%d')
     current = datetime.strptime(c1[-1], '%Y/%m/%d %H:%M:%S')
     td2 = (expect - current).days
 
@@ -68,5 +68,5 @@ def readFromSpread(cf):
 with open('config.yml', 'r') as yml:
     config = yaml.load(yml, Loader=yaml.SafeLoader)
 
-# openGoogleForm(config)
+openGoogleForm(config)
 readFromSpread(config)
