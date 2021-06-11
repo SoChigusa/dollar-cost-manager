@@ -6,7 +6,7 @@ import datetime
 from datetime import datetime, timedelta
 
 # for Google Calendar access
-import os.path
+import os
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -114,6 +114,9 @@ def writeToCalendar(cf, next):
     event = service.events().insert(calendarId=config['calendar-id'],
                                     body=event).execute()
     print('Added to Google Calendar with ID=', event['id'])
+
+# 更新を確認
+os.system('git pull')
 
 # 設定ファイルの読み込み
 with open('config.yml', 'r') as yml:
