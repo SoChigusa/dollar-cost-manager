@@ -5,6 +5,13 @@ import numpy as np
 import datetime
 from datetime import datetime, timedelta
 
+# for Google Calendar access
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+
 def openGoogleForm(cf):
     from selenium import webdriver
     from selenium.webdriver.common.keys import Keys
@@ -62,11 +69,56 @@ def readFromSpread(cf):
     next = current + timedelta(days=td+td2)
     strnext = next.strftime('%Y/%m/%d')
     worksheet.update_cell(len(c2), 4, strnext)
-    print('next purchase date is set to be '+strnext+'!!')
+    print('Next purchase date is set to be '+strnext+'!!')
+
+    return next
+
+def writeToCalendar(cf, next):
+    # If modifying these scopes, delete the file token.json.
+    SCOPES = ['https://www.googleapis.com/auth/calendar']
+
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    service = build('calendar', 'v3', credentials=creds)
+
+    event = {
+      'summary': 'ETF新規購入',
+      'location': 'Charles Schwab',
+      'description': 'Automatically scheduled by Dollar Cost Manager App',
+      'start': {
+        'dateTime': next.strftime('%Y-%m-%dT09:30:00'),
+        'timeZone': 'America/New_York',
+      },
+      'end': {
+        'dateTime': next.strftime('%Y-%m-%dT16:00:00'),
+        'timeZone': 'America/New_York',
+      },
+    }
+
+    event = service.events().insert(calendarId=config['calendar-id'],
+                                    body=event).execute()
+    print('Added to Google Calendar with ID=', event['id'])
 
 # 設定ファイルの読み込み
 with open('config.yml', 'r') as yml:
     config = yaml.load(yml, Loader=yaml.SafeLoader)
 
 openGoogleForm(config)
-readFromSpread(config)
+next = readFromSpread(config)
+writeToCalendar(config, next)
